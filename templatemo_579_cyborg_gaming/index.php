@@ -215,7 +215,7 @@ https://templatemo.com/tm-579-cyborg-gaming
             </div>
             <div class="col-lg-12">
               <div class="main-button">
-                <a href="profile.html">View Your Library</a>
+                <a href="profile.php">View Your Library</a>
               </div>
             </div>
           </div>
