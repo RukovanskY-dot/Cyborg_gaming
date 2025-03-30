@@ -46,7 +46,7 @@ https://templatemo.com/tm-579-cyborg-gaming
 
   <!-- ***** Header Area Start ***** -->
   <?php 
-    include("partials/header.php")
+    include("partials/header.php");
   ?>
   <!-- ***** Header Area End ***** -->
 
@@ -356,7 +356,7 @@ https://templatemo.com/tm-579-cyborg-gaming
   </div>
   
   <?php 
-    include("partials/footer.php")
+    include("partials/footer.php");
   ?>
 
 
