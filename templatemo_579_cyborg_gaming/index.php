@@ -63,7 +63,7 @@ https://templatemo.com/tm-579-cyborg-gaming
                   <h6>Welcome To Cyborg</h6>
                   <h4><em>Browse</em> Our Popular Games Here</h4>
                   <div class="main-button">
-                    <a href="browse.html">Browse Now</a>
+                    <a href="browse.php">Browse Now</a>
                   </div>
                 </div>
               </div>
@@ -167,7 +167,7 @@ https://templatemo.com/tm-579-cyborg-gaming
                   </div>
                   <div class="col-lg-12">
                     <div class="main-button">
-                      <a href="browse.html">Discover Popular</a>
+                      <a href="browse.php">Discover Popular</a>
                     </div>
                   </div>
                 </div>
