@@ -2,7 +2,7 @@
 session_start();
 include("tools/db.php");
 
-// === Osztályok ===
+
 
 class Player {
     public $id;
@@ -25,8 +25,8 @@ class PlayerRepository {
         $this->db = $db;
     }
 
-    /**
-     * Lekéri az összes játékost legutóbbitól kezdve
+     /**
+     * 
      * @return Player[]
      */
     public function getAll(): array {
@@ -46,7 +46,6 @@ class PlayerRepository {
     }
 }
 
-// === Inicializálás és adatok lekérése ===
 
 $db = getDatabaseCennection();
 $repo = new PlayerRepository($db);
