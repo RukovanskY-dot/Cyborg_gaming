@@ -1,16 +1,64 @@
 <?php
 session_start();
 include("tools/db.php");
-$db = getDatabaseCennection();
 
-$result = $db->query("SELECT id, first_name, last_name, Email FROM hráči ORDER BY id DESC");
+// === Osztályok ===
+
+class Player {
+    public $id;
+    public $firstName;
+    public $lastName;
+    public $email;
+
+    public function __construct($id, $firstName, $lastName, $email) {
+        $this->id = $id;
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->email = $email;
+    }
+}
+
+class PlayerRepository {
+    private mysqli $db;
+
+    public function __construct(mysqli $db) {
+        $this->db = $db;
+    }
+
+    /**
+     * Lekéri az összes játékost legutóbbitól kezdve
+     * @return Player[]
+     */
+    public function getAll(): array {
+        $result = $this->db->query("SELECT id, first_name, last_name, email FROM hráči ORDER BY id DESC");
+        $players = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $players[] = new Player(
+                $row['id'],
+                $row['first_name'],
+                $row['last_name'],
+                $row['email']
+            );
+        }
+
+        return $players;
+    }
+}
+
+// === Inicializálás és adatok lekérése ===
+
+$db = getDatabaseCennection();
+$repo = new PlayerRepository($db);
+$players = $repo->getAll();
 ?>
 
+
 <!DOCTYPE html>
-<html lang="eng">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Zoznam hráčov</title>
+  <title>Zoznam hráčov (OOP)</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/templatemo-cyborg-gaming.css">
   <style>
@@ -28,36 +76,32 @@ $result = $db->query("SELECT id, first_name, last_name, Email FROM hráči ORDER
     <h2>Zaregistrovaní hráči</h2>
 
     <table>
-  <thead>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Meno</th>
+          <th>Priezvisko</th>
+          <th>Email</th>
+          <th>Akcia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($players as $player): ?>
+          <tr>
+            <td><?= $player->id ?></td>
+            <td><?= htmlspecialchars($player->firstName) ?></td>
+            <td><?= htmlspecialchars($player->lastName) ?></td>
+            <td><?= htmlspecialchars($player->email) ?></td>
+            <td>
+              <a href="edit.php?id=<?= $player->id ?>" class="btn btn-primary btn-sm">Upraviť</a>
+              <a href="delete.php?id=<?= $player->id ?>" class="btn btn-danger btn-sm" onclick="return confirm('Naozaj chceš vymazať tohto hráča?')">Vymazať</a>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
 
-    <tr>
-      <th>#</th>
-      <th>Meno</th>
-      <th>Priezvisko</th>
-      <th>Email</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php while ($row = $result->fetch_assoc()): ?>
-    <tr>
-  <td><?= $row["id"] ?></td>
-  <td><?= htmlspecialchars($row["first_name"]) ?></td>
-  <td><?= htmlspecialchars($row["last_name"]) ?></td>
-  <td><?= htmlspecialchars($row["Email"]) ?></td>
-  <td>
-    <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-primary btn-sm">Upraviť</a>
-    <a href="delete.php?id=<?= $row['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Naozaj chceš vymazať tohto hráča?')">Vymazať</a>
-
-
-  </td>
-</tr>
-
-    <?php endwhile; ?>
-  </tbody>
-</table>
-
-<a href="register.php" class="btn">Nový hráč</a>
-
+    <a href="register.php" class="btn">Nový hráč</a>
   </div>
 </body>
 </html>
