@@ -1,3 +1,6 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -45,26 +48,61 @@ https://templatemo.com/tm-579-cyborg-gaming
   <!-- ***** Preloader End ***** -->
 
   <!-- ***** Header Area Start ***** -->
-  <?php 
-  session_start();
-  include("partials/header.php");
-  include("tools/db.php");
-  $dbConnection = getDatabaseCennection();
+  <?php
+include("partials/header.php");
+include("tools/db.php");
 
-  if (!isset($_SESSION["user_id"])) {
+
+class User {
+    public $firstName;
+    public $lastName;
+    public $email;
+
+    public function __construct($firstName, $lastName, $email) {
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->email = $email;
+    }
+}
+
+class UserRepository {
+    private $db;
+
+    public function __construct(mysqli $db) {
+        $this->db = $db;
+    }
+
+    public function findById($id) {
+        $stmt = $this->db->prepare("SELECT first_name, last_name, email FROM hráči WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->bind_result($firstName, $lastName, $email);
+        $stmt->fetch();
+        $stmt->close();
+
+        if ($firstName) {
+            return new User($firstName, $lastName, $email);
+        }
+
+        return null;
+    }
+}
+
+
+if (!isset($_SESSION["user_id"])) {
     header("Location: login.php");
     exit;
 }
 
-$user_id = $_SESSION["user_id"];
+$dbConnection = getDatabaseCennection();
+$userRepo = new UserRepository($dbConnection);
 
-$stmt = $dbConnection->prepare("SELECT first_name, last_name, email FROM hráči WHERE id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$stmt->bind_result($first_name, $last_name, $email);
-$stmt->fetch();
-$stmt->close();
+$userId = $_SESSION["user_id"];
+$user = $userRepo->findById($userId);
+
+
 ?>
+
   <!-- ***** Header Area End ***** -->
 
   <div class="container">
@@ -83,7 +121,7 @@ $stmt->close();
                   <div class="col-lg-4 align-self-center">
                     <div class="main-info header-text">
                       <span>Offline</span>
-                      <h4><?php echo htmlspecialchars($first_name . ' ' . $last_name); ?></h4>
+                      <h4><?php echo htmlspecialchars($user->firstName . ' ' . $user->lastName); ?></h4>
                       <p>You Haven't Gone Live yet. Go Live By Touching The Button Below.</p>
                       <div class="main-border-button">
                         <a href="#">Start Live Stream</a>

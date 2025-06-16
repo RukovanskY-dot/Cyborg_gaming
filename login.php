@@ -14,40 +14,86 @@
 </head>
 <body>
     <?php
-        session_start();
-        include("partials/header.php");
-    include("tools/db.php");
-    $dbConnection = getDatabaseCennection();
+session_start();
+include("partials/header.php");
+include("tools/db.php");
 
-    $login_error = "";
+// Osztályok
+class UserLoginDTO {
+    public $id;
+    public $email;
+    public $hashedPassword;
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = $_POST["email"];
-    $password = $_POST["password"];
-
-    $stmt = $dbConnection->prepare("SELECT id, password FROM hráči WHERE Email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $stmt->store_result();
-
-    if ($stmt->num_rows === 1) {
-        $stmt->bind_result($user_id, $hashed_password);
-        $stmt->fetch();
-
-        if (password_verify($password, $hashed_password)) {
-            $_SESSION["user_id"] = $user_id;
-            $_SESSION["email"] = $email;
-            header("Location: /Cyborg_gaming-main/profile.php");
-            exit;
-        } else {
-            $login_error = "Nesprávne heslo.";
-        }
-    } else {
-        $login_error = "Email neexistuje.";
+    public function __construct($id, $email, $hashedPassword) {
+        $this->id = $id;
+        $this->email = $email;
+        $this->hashedPassword = $hashedPassword;
     }
 }
 
+class AuthRepository {
+    private mysqli $db;
+
+    public function __construct(mysqli $db) {
+        $this->db = $db;
+    }
+
+    public function findUserByEmail(string $email): ?UserLoginDTO {
+        $stmt = $this->db->prepare("SELECT id, password FROM hráči WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $stmt->store_result();
+
+        if ($stmt->num_rows === 1) {
+            $stmt->bind_result($id, $hashedPassword);
+            $stmt->fetch();
+            return new UserLoginDTO($id, $email, $hashedPassword);
+        }
+
+        return null;
+    }
+}
+
+class AuthService {
+    private AuthRepository $repo;
+
+    public function __construct(AuthRepository $repo) {
+        $this->repo = $repo;
+    }
+
+    public function login(string $email, string $password): array {
+        $user = $this->repo->findUserByEmail($email);
+        if (!$user) {
+            return ['error' => 'Email neexistuje.'];
+        }
+
+        if (!password_verify($password, $user->hashedPassword)) {
+            return ['error' => 'Nesprávne heslo.'];
+        }
+
+        $_SESSION["user_id"] = $user->id;
+        $_SESSION["email"] = $user->email;
+        header("Location: /Cyborg_gaming-main/profile.php");
+        exit;
+    }
+}
+
+// Login feldolgozása
+$dbConnection = getDatabaseCennection();
+$authService = new AuthService(new AuthRepository($dbConnection));
+
+$login_error = "";
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $email = $_POST["email"] ?? '';
+    $password = $_POST["password"] ?? '';
+    $result = $authService->login($email, $password);
+    if (isset($result['error'])) {
+        $login_error = $result['error'];
+    }
+}
 ?>
+
 
 <div class="login-container">
     <h2>Prihlasovanie</h2>

@@ -13,57 +13,80 @@
 </head>
 <body>
     <?php
-        session_start();
-        include("partials/header.php");
-        
-
-    
-
-    $first_name= "";
-    $last_name= "";
-    $email= ""; 
-    $password = "";
+session_start();
+include("partials/header.php");
+include "tools/db.php";
 
 
+class User {
+    public $firstName;
+    public $lastName;
+    public $email;
+    public $password;
 
-    $first_name_error= "";
-    $last_name_error= "";
-    $email_error= "";
-    $password_error = "";
-    
-    $error = false;
-    
-    include "tools/db.php";
-    $dbConnection = getDatabaseCennection(); 
-    
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $first_name = $_POST["first_name"];
-    $last_name = $_POST["last_name"];
-    $email = $_POST["email"];
-    $password = $_POST["password"];
-
-    
-    $statement = $dbConnection->prepare("SELECT id FROM hráči WHERE email = ?");
-    $statement->bind_param("s", $email);
-    $statement->execute();
-    $statement->store_result();
-
-    if ($statement->num_rows > 0) {
-        $email_error = "Email existuje";
-        $error = true;
+    public function __construct($firstName, $lastName, $email, $password) {
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->email = $email;
+        $this->password = $password;
     }
 
-    if (!$error) {
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    public function hashPassword() {
+        return password_hash($this->password, PASSWORD_DEFAULT);
+    }
+}
 
-        $stmt = $dbConnection->prepare("INSERT INTO hráči (first_name, last_name, email, password) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $first_name, $last_name, $email, $hashed_password);
+class UserRepository {
+    private $db;
+
+    public function __construct(mysqli $db) {
+        $this->db = $db;
+    }
+
+    public function emailExists($email) {
+        $stmt = $this->db->prepare("SELECT id FROM hráči WHERE email = ?");
+        $stmt->bind_param("s", $email);
         $stmt->execute();
+        $stmt->store_result();
+        return $stmt->num_rows > 0;
+    }
 
-        $_SESSION["id"] = $stmt->insert_id;
-        $_SESSION["first_name"] = $first_name;
-        $_SESSION["last_name"] = $last_name;
-        $_SESSION["email"] = $email;
+    public function save(User $user) {
+        $stmt = $this->db->prepare("INSERT INTO hráči (first_name, last_name, email, password) VALUES (?, ?, ?, ?)");
+        $hashedPassword = $user->hashPassword();
+        $stmt->bind_param("ssss", $user->firstName, $user->lastName, $user->email, $hashedPassword);
+        $stmt->execute();
+        return $this->db->insert_id;
+    }
+}
+
+class RegistrationController {
+    private $userRepo;
+
+    public function __construct(UserRepository $repo) {
+        $this->userRepo = $repo;
+    }
+
+    public function register($post) {
+        $errors = [];
+
+        $firstName = $post['first_name'] ?? '';
+        $lastName = $post['last_name'] ?? '';
+        $email = $post['email'] ?? '';
+        $password = $post['password'] ?? '';
+
+        if ($this->userRepo->emailExists($email)) {
+            $errors['email'] = "Email existuje";
+            return ['errors' => $errors, 'data' => compact('firstName', 'lastName', 'email')];
+        }
+
+        $user = new User($firstName, $lastName, $email, $password);
+        $id = $this->userRepo->save($user);
+
+        $_SESSION["id"] = $id;
+        $_SESSION["first_name"] = $user->firstName;
+        $_SESSION["last_name"] = $user->lastName;
+        $_SESSION["email"] = $user->email;
 
         header("Location: /Cyborg_gaming-main/index.php");
         exit;
@@ -71,9 +94,24 @@
 }
 
 
-    
+$first_name = $last_name = $email = "";
+$first_name_error = $last_name_error = $email_error = $password_error = "";
 
-    ?>
+$db = getDatabaseCennection();
+$controller = new RegistrationController(new UserRepository($db));
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $result = $controller->register($_POST);
+
+    if (isset($result['errors'])) {
+        $email_error = $result['errors']['email'] ?? '';
+        $first_name = $result['data']['firstName'];
+        $last_name = $result['data']['lastName'];
+        $email = $result['data']['email'];
+    }
+}
+?>
+
 
     <div class="registration-form">
         <h2>Registrácia</h2>
