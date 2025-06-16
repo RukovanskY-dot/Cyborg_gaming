@@ -1,45 +1,86 @@
 <?php
 session_start();
 include("tools/db.php");
+
+
+class Player {
+    public int $id;
+    public string $firstName;
+    public string $lastName;
+    public string $email;
+
+    public function __construct(int $id, string $firstName, string $lastName, string $email) {
+        $this->id = $id;
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->email = $email;
+    }
+}
+
+class PlayerRepository {
+    private mysqli $db;
+
+    public function __construct(mysqli $db) {
+        $this->db = $db;
+    }
+
+    public function findById(int $id): ?Player {
+        $stmt = $this->db->prepare("SELECT first_name, last_name, email FROM hráči WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->bind_result($firstName, $lastName, $email);
+
+        if ($stmt->fetch()) {
+            $stmt->close();
+            return new Player($id, $firstName, $lastName, $email);
+        }
+
+        $stmt->close();
+        return null;
+    }
+
+    public function update(Player $player): bool {
+        $stmt = $this->db->prepare("UPDATE hráči SET first_name = ?, last_name = ?, email = ? WHERE id = ?");
+        $stmt->bind_param("sssi", $player->firstName, $player->lastName, $player->email, $player->id);
+        $success = $stmt->execute();
+        $stmt->close();
+        return $success;
+    }
+}
+
+
 $db = getDatabaseCennection();
+$repo = new PlayerRepository($db);
+
+$error = "";
+$success = "";
 
 if (!isset($_GET["id"])) {
     echo "Chýbajúci hráč ID.";
     exit;
 }
 
-$id = $_GET["id"];
-$error = "";
-$success = "";
+$id = (int)$_GET["id"];
+$player = $repo->findById($id);
 
-
-$stmt = $db->prepare("SELECT first_name, last_name, Email FROM hráči WHERE id = ?");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$stmt->bind_result($first_name, $last_name, $email);
-if (!$stmt->fetch()) {
+if (!$player) {
     echo "Hráč sa nenašiel.";
     exit;
 }
-$stmt->close();
-
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $first_name = $_POST["first_name"];
-    $last_name = $_POST["last_name"];
-    $email = $_POST["email"];
+    $player->firstName = $_POST["first_name"] ?? '';
+    $player->lastName = $_POST["last_name"] ?? '';
+    $player->email = $_POST["email"] ?? '';
 
-    $stmt = $db->prepare("UPDATE hráči SET first_name = ?, last_name = ?, Email = ? WHERE id = ?");
-    $stmt->bind_param("sssi", $first_name, $last_name, $email, $id);
-    
-    if ($stmt->execute()) {
+    if ($repo->update($player)) {
         $success = "Úspešne upravené!";
     } else {
         $error = "Chyba pri ukladaní.";
     }
-    $stmt->close();
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="sk">
@@ -61,20 +102,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   </style>
 </head>
 <body>
-  <h2>✏️ Upraviť hráča ID: <?= $id ?></h2>
+  <h2>✏️ Upraviť hráča ID: <?= $player->id ?></h2>
 
   <?php if ($success): ?><div class="message"><?= $success ?></div><?php endif; ?>
   <?php if ($error): ?><div class="error"><?= $error ?></div><?php endif; ?>
 
   <form method="POST">
     <label>Meno:</label>
-    <input type="text" name="first_name" value="<?= htmlspecialchars($first_name) ?>" required>
+    <input type="text" name="first_name" value="<?= htmlspecialchars($player->firstName) ?>" required>
 
     <label>Priezvisko:</label>
-    <input type="text" name="last_name" value="<?= htmlspecialchars($last_name) ?>" required>
+    <input type="text" name="last_name" value="<?= htmlspecialchars($player->lastName) ?>" required>
 
     <label>Email:</label>
-    <input type="email" name="email" value="<?= htmlspecialchars($email) ?>" required>
+    <input type="email" name="email" value="<?= htmlspecialchars($player->email) ?>" required>
 
     <button type="submit">💾 Uložiť zmeny</button>
   </form>
