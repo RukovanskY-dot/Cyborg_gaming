@@ -2,6 +2,16 @@
 session_start();
 include("tools/db.php");
 
+require_once 'tools/Auth.php';
+$auth = new Auth();
+
+if (!$auth->isLoggedIn() || !$auth->isAdmin()) {
+    header("Location: login.php");
+    exit();
+}
+
+
+
 
 
 class Player {
