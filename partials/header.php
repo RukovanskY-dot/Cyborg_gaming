@@ -28,10 +28,10 @@
                     <ul class="nav">
                         <li><a href="index.php">Home</a></li>
                         <li><a href="browse.php" class="active">Browse</a></li>
-                        <li><a href="details.php">Details</a></li>
                         <li><a href="streams.php">Streams</a></li>
                         <li><a href="register.php">Register</a></li>
                         <li><a href="login.php">Login</a></li>
+                        <li><a href="logout.php">Logout</a></li>
                         <li><a href="profile.php">Profile <img src="assets/images/profile-header.jpg" alt=""></a></li>
                     </ul>   
                     <a class='menu-trigger'>

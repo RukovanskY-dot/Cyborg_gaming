@@ -2,7 +2,7 @@
 session_start();
 include("tools/db.php");
 
-// === Osztályok ===
+
 
 class PlayerRepository {
     private mysqli $db;
@@ -20,7 +20,7 @@ class PlayerRepository {
     }
 }
 
-// === Logika ===
+
 
 if (!isset($_GET["id"])) {
     echo "Chýba ID hráča.";
