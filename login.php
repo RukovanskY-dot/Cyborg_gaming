@@ -18,18 +18,23 @@ session_start();
 include("partials/header.php");
 include("tools/db.php");
 
-// Osztályok
+
 class UserLoginDTO {
     public $id;
     public $email;
     public $hashedPassword;
+    public $role;
 
-    public function __construct($id, $email, $hashedPassword) {
+    public function __construct($id, $email, $hashedPassword, $role) {
         $this->id = $id;
         $this->email = $email;
         $this->hashedPassword = $hashedPassword;
+        $this->role = $role;
     }
 }
+
+    
+
 
 class AuthRepository {
     private mysqli $db;
@@ -39,19 +44,21 @@ class AuthRepository {
     }
 
     public function findUserByEmail(string $email): ?UserLoginDTO {
-        $stmt = $this->db->prepare("SELECT id, password FROM hráči WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $stmt->store_result();
+    $stmt = $this->db->prepare("SELECT id, password, role FROM hráči WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $stmt->store_result();
 
-        if ($stmt->num_rows === 1) {
-            $stmt->bind_result($id, $hashedPassword);
-            $stmt->fetch();
-            return new UserLoginDTO($id, $email, $hashedPassword);
-        }
-
-        return null;
+    if ($stmt->num_rows === 1) {
+        $stmt->bind_result($id, $hashedPassword, $role);
+        $stmt->fetch();
+        return new UserLoginDTO($id, $email, $hashedPassword, $role);
     }
+
+    return null;
+}
+
+    
 }
 
 class AuthService {
@@ -73,12 +80,20 @@ class AuthService {
 
         $_SESSION["user_id"] = $user->id;
         $_SESSION["email"] = $user->email;
-        header("Location: /Cyborg_gaming-main/profile.php");
+        $_SESSION["role"] = $user->role;
+
+       if ($user->role === 'admin') {
+    header("Location: /Cyborg_gaming-main/Hraci.php");
+}   else {
+    header("Location: /Cyborg_gaming-main/profile.php");
+}
+exit;
+
         exit;
     }
 }
 
-// Login feldolgozása
+
 $dbConnection = getDatabaseCennection();
 $authService = new AuthService(new AuthRepository($dbConnection));
 
